@@ -66,6 +66,11 @@ $output = '';
 $class_name = '';
 $class_properties = '';
 $class_properties_format = '';
+$setters = true;
+$setters_type = 'public';
+$getters = true;
+$getters_type = 'public';
+$add_return_types = true;
 if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
     $class_name = $_POST['_class_name'];
     $class_properties = $_POST['_properties'];
@@ -213,15 +218,15 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
                         </label>
                     </div>
                     <div class="form-group">
-                        <button type="submit" name="submit_data" value="submitted" class="btn btn-outline-success">
-                            Generate
-                        </button>
-                    </div>
-                    <div class="form-group">
                         <label class="form-check">
                             <input type="checkbox" class="form-check-input" name="add_return_types" value="1" <?php echo $add_return_types ? 'checked' : ''; ?>>
                             <span class="form-check-label">Add Return Types to setters/getters?</span>
                         </label>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" name="submit_data" value="submitted" class="btn btn-outline-success">
+                            Generate
+                        </button>
                     </div>
                 </form>
             </fieldset>
