@@ -6,6 +6,10 @@ class each_property
     private ?string $type = null;
     private ?string $name = null;
     private ?string $default_value = null;
+    private ?string $db_column = null;
+    private ?string $setter_name = null;
+    private ?string $getter_name = null;
+
     private int $len = 0;
     function __construct(array $arr)
     {
@@ -29,6 +33,13 @@ class each_property
                 $this->name = $arr[2];
                 $this->default_value = $arr[3];
                 break;
+            case 5:
+                $this->accessibility = $arr[0];
+                $this->type = $arr[1];
+                $this->name = $arr[2];
+                $this->default_value = $arr[3];
+                $this->db_column = $arr[4];
+                break;
         }
     }
 
@@ -46,6 +57,7 @@ class each_property
                 $output = $this->accessibility . " " . $this->type . " $" . $this->name . ";";
                 break;
             case 4:
+            case 5:
                 $output = $this->accessibility . " " . $this->type . " $" . $this->name . " = " . $this->default_value . ";";
                 break;
         }
@@ -60,6 +72,26 @@ class each_property
     {
         return $this->type;
     }
+    function get_db_column(): ?string
+    {
+        return $this->db_column;
+    }
+    function get_setter_name(): ?string
+    {
+        if(!$this->setter_name){
+            $this->setter_name = 'set_'.$this->get_name();
+        }
+
+        return $this->setter_name;
+    }
+    function get_getter_name(): ?string
+    {
+        if(!$this->getter_name){
+            $this->getter_name = 'get_'.$this->get_name();
+        }
+
+        return $this->getter_name;
+    }
 }
 
 $output = '';
@@ -71,6 +103,7 @@ $setters_type = 'public';
 $getters = true;
 $getters_type = 'public';
 $add_return_types = true;
+$add_features_for_edit_mode = true;
 if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
     $class_name = $_POST['_class_name'];
     $class_properties = $_POST['_properties'];
@@ -80,6 +113,7 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
     $setters_type = isset($_POST['setters_type']) ? $_POST['setters_type'] : 'public';
     $getters_type = isset($_POST['getters_type']) ? $_POST['getters_type'] : 'public';
     $add_return_types = isset($_POST['add_return_types']) && $_POST['add_return_types'] == 1 ? $_POST['add_return_types'] : false;
+    $add_features_for_edit_mode = isset($_POST['add_features_for_edit_mode']) && $_POST['add_features_for_edit_mode'] == 1 ? $_POST['add_features_for_edit_mode'] : false;
 
     $properties = array_map(function ($n) {
         $parts = explode(' ', $n);
@@ -92,16 +126,110 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
 
     $output = array();
     $output[] = '<?php';
+    $output[] = "\n";
+    if($add_features_for_edit_mode){
+        $output[] = 'use Dev\Core\CallReturn;';
+        $output[] = 'use ezSQL_mysqli;';
+        $output[] = "\n";
+    }
     $output[] = 'class ' . $class_name;
     $output[] = '{';
     foreach ($properties as $p) {
         $output[] = "\t".$p->get_line();
     }
-    $output[] = "";
-    $output[] = "\t"."public function __construct()";
-    $output[] = "\t"."{";
-    $output[] = "\t"."\t";
-    $output[] = "\t"."}";
+    if($add_features_for_edit_mode){
+        $output[] = "\t"."private bool \$edit_data_not_found = false;";
+        $output[] = "\t"."public function __construct(?int \$id = null)";
+        $output[] = "\t"."{";
+        $output[] = "\t\t"."if(\$id){";
+        $output[] = "\t\t\t"."\$data = \$this->get_data(['id' => \$id, 'single' => true]);";
+        $output[] = "\t\t\t"."if(\$data) \$this->fill_with_array(\$data);";
+        $output[] = "\t\t\t"."else{";
+        $output[] = "\t\t\t\t"."\$this->edit_data_not_found = true;";
+        $output[] = "\t\t\t\t"."\$this->fill_defaults();";
+        $output[] = "\t\t\t"."}";
+        $output[] = "\t\t"."}";
+        $output[] = "\t\t"."else \$this->fill_defaults();";
+        $output[] = "\t"."}";
+
+        $output[] = "\t"."private function fill_defaults()";
+        $output[] = "\t"."{";
+        $output[] = "\t\t"."//write you default filling functions";
+        $output[] = "\t\t"."}";
+
+        $output[] = "\t"."public function fill_with_array(array \$data)";
+        $output[] = "\t"."{";
+        $output[] = "\t\t"."//write you default filling functions";
+        foreach($properties as $p){
+            if($p->get_db_column()){
+                $output[] = "\t\t".'$this->'.$p->get_setter_name().'($data[\''.$p->get_db_column().'\']);';
+            }
+        }
+        $output[] = "\t\t"."}";
+
+        $output[] = "\t"."public function is_invalid_edit(): bool";
+        $output[] = "\t"."{";
+        $output[] = "\t\t"."return \$this->edit_data_not_found;";
+        $output[] = "\t\t"."}";
+
+        $output[] = "\t".'public function get_data(?array $param = null)';
+        $output[] = "\t"."{";
+        $output[] = "\t\t".'$sql = "SELECT ';
+        $output[] = "\t\t\t\t".'';
+        $output[] = "\t\t\t".'FROM ';
+        $output[] = "\t\t\t\t".'';
+        $output[] = "\t\t\t".'WHERE 1 ';
+        $output[] = "\t\t\t".'";';
+
+        $output[] = "\t\t".'$count_sql = "SELECT COUNT() AS TOTAL';
+        $output[] = "\t\t\t\t".'';
+        $output[] = "\t\t\t".'FROM ';
+        $output[] = "\t\t\t\t".'';
+        $output[] = "\t\t\t".'WHERE 1 ';
+        $output[] = "\t\t\t".'";';
+
+        $output[] = "\t\t".'$condition = "";';
+        $output[] = "\t\t".'$db_map = [';
+        foreach ($properties as $p){
+            if($p->get_db_column()){
+                $output[] = "\t\t\t"."'".$p->get_name()."' => '".$p->get_db_column()."',";
+            }
+        }
+        $output[] = "\t\t".'];';
+        $output[] = "\t\t".'return process_sql_operation($db_map, $condition, $sql, $count_sql, $param);';
+        $output[] = "\t"."}";
+
+        $output[] = "\t".'public function put_data()';
+        $output[] = "\t"."{";
+        $output[] = "\t\t".'/** @var ezSQL_mysqli $devdb */';
+        $output[] = "\t\t".'global $devdb;';
+        $output[] = "\t\t".'$ret = new CallReturn();';
+
+        $output[] = "\t\t".'$insert_data = [';
+        foreach ($properties as $p){
+            if($p->get_db_column()){
+                $output[] = "\t\t\t"."'".$p->get_db_column()."' => \$this->".$p->get_getter_name()."(),";
+            }
+        }
+        $output[] = "\t\t".'];';
+
+        $output[] = "\t\t".'if($this->get_id()) $db_ret = $devdb->insert_update(\'\', $insert_data, " = \'".$this->get_id()."\'");';
+        $output[] = "\t\t".'else $db_ret = $devdb->insert_update(\'\', $insert_data);';
+
+        $output[] = "\t\t".'if($db_ret[\'error\']) $ret->add_error($db_ret[\'error\']);';
+        $output[] = "\t\t".'else $ret->add_success($db_ret[\'success\']);';
+
+        $output[] = "\t\t".'return $ret;';
+        $output[] = "\t"."}";
+    }
+    else{
+        $output[] = "";
+        $output[] = "\t"."public function __construct()";
+        $output[] = "\t"."{";
+        $output[] = "\t"."\t";
+        $output[] = "\t"."}";
+    }
+
 
     if ($setters) {
         $output[] = '';
@@ -109,7 +237,7 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
         $output[] = "\t".'// Setter Methods';
         $output[] = '';
         foreach ($properties as $p) {
-            $output[] = "\t".$setters_type . " function set_".$p->get_name()."(".($p->get_type() ? $p->get_type().' ' : '')."\$val)".($add_return_types ? ": ".$class_name : "");
+            $output[] = "\t".$setters_type . " function ".$p->get_setter_name()."(".($p->get_type() ? $p->get_type().' ' : '')."\$val)".($add_return_types ? ": ".$class_name : "");
             $output[] = "\t"."{";
             $output[] = "\t"."\t"."\$this->".$p->get_name()." = \$val;";
             $output[] = "\t"."\t"."return \$this;";
@@ -122,7 +250,7 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
         $output[] = "\t".'// Getter Methods';
         $output[] = '';
         foreach ($properties as $p) {
-            $output[] = "\t".$getters_type . " function get_".$p->get_name()."()".($add_return_types && $p->get_type()  ? ": ".$p->get_type() : "");
+            $output[] = "\t".$getters_type . " function ".$p->get_getter_name()."()".($add_return_types && $p->get_type()  ? ": ".$p->get_type() : "");
             $output[] = "\t"."{";
             $output[] = "\t"."\t"."return \$this->".$p->get_name().";";
             $output[] = "\t"."}";
@@ -221,6 +349,12 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
                         <label class="form-check">
                             <input type="checkbox" class="form-check-input" name="add_return_types" value="1" <?php echo $add_return_types ? 'checked' : ''; ?>>
                             <span class="form-check-label">Add Return Types to setters/getters?</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input" name="add_features_for_edit_mode" value="1" <?php echo $add_features_for_edit_mode ? 'checked' : ''; ?>>
+                            <span class="form-check-label">Features for edit mode?</span>
                         </label>
                     </div>
                     <div class="form-group">
