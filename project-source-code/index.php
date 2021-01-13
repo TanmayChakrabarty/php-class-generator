@@ -1,98 +1,6 @@
 <?php
 
-class each_property
-{
-    private ?string $accessibility = null;
-    private ?string $type = null;
-    private ?string $name = null;
-    private ?string $default_value = null;
-    private ?string $db_column = null;
-    private ?string $setter_name = null;
-    private ?string $getter_name = null;
-
-    private int $len = 0;
-    function __construct(array $arr)
-    {
-        $this->len = count($arr);
-        switch ($this->len) {
-            case 1:
-                $this->name = $arr[0];
-                break;
-            case 2:
-                $this->accessibility = $arr[0];
-                $this->name = $arr[1];
-                break;
-            case 3:
-                $this->accessibility = $arr[0];
-                $this->type = $arr[1];
-                $this->name = $arr[2];
-                break;
-            case 4:
-                $this->accessibility = $arr[0];
-                $this->type = $arr[1];
-                $this->name = $arr[2];
-                $this->default_value = $arr[3];
-                break;
-            case 5:
-                $this->accessibility = $arr[0];
-                $this->type = $arr[1];
-                $this->name = $arr[2];
-                $this->default_value = $arr[3];
-                $this->db_column = $arr[4];
-                break;
-        }
-    }
-
-    function get_line(): string
-    {
-        $output = '';
-        switch ($this->len) {
-            case 1:
-                $output = "var $" . $this->name . ";";
-                break;
-            case 2:
-                $output = $this->accessibility . " $" . $this->name . ";";
-                break;
-            case 3:
-                $output = $this->accessibility . " " . $this->type . " $" . $this->name . ";";
-                break;
-            case 4:
-            case 5:
-                $output = $this->accessibility . " " . $this->type . " $" . $this->name . " = " . $this->default_value . ";";
-                break;
-        }
-        return $output;
-    }
-
-    function get_name(): ?string
-    {
-        return $this->name;
-    }
-    function get_type(): ?string
-    {
-        return $this->type;
-    }
-    function get_db_column(): ?string
-    {
-        return $this->db_column;
-    }
-    function get_setter_name(): ?string
-    {
-        if(!$this->setter_name){
-            $this->setter_name = 'set_'.$this->get_name();
-        }
-
-        return $this->setter_name;
-    }
-    function get_getter_name(): ?string
-    {
-        if(!$this->getter_name){
-            $this->getter_name = 'get_'.$this->get_name();
-        }
-
-        return $this->getter_name;
-    }
-}
+include_once "each_property.class.php";
 
 $output = '';
 $class_name = '';
@@ -237,11 +145,12 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
         $output[] = "\t".'// Setter Methods';
         $output[] = '';
         foreach ($properties as $p) {
-            $output[] = "\t".$setters_type . " function ".$p->get_setter_name()."(".($p->get_type() ? $p->get_type().' ' : '')."\$val)".($add_return_types ? ": ".$class_name : "");
+            $output[] = $p->get_setter_method($setters_type, $add_return_types, $class_name);
+            /*$output[] = "\t".$setters_type . " function ".$p->get_setter_name()."(".($p->get_type() ? $p->get_type().' ' : '')."\$val)".($add_return_types ? ": ".$class_name : "");
             $output[] = "\t"."{";
             $output[] = "\t"."\t"."\$this->".$p->get_name()." = \$val;";
             $output[] = "\t"."\t"."return \$this;";
-            $output[] = "\t"."}";
+            $output[] = "\t"."}";*/
         }
     }
     if ($getters) {
@@ -250,16 +159,17 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
         $output[] = "\t".'// Getter Methods';
         $output[] = '';
         foreach ($properties as $p) {
-            $output[] = "\t".$getters_type . " function ".$p->get_getter_name()."()".($add_return_types && $p->get_type()  ? ": ".$p->get_type() : "");
+            $output[] = $p->get_getter_method($getters_type, $add_return_types);
+            /*$output[] = "\t".$getters_type . " function ".$p->get_getter_name()."()".($add_return_types && $p->get_type()  ? ": ".$p->get_type() : "");
             $output[] = "\t"."{";
             $output[] = "\t"."\t"."return \$this->".$p->get_name().";";
-            $output[] = "\t"."}";
+            $output[] = "\t"."}";*/
         }
     }
 
     $output[] = "}";
 
-    $output[] = "?>";
+    /*$output[] = "?>";*/
 
     $output = implode(PHP_EOL, $output);
 }
