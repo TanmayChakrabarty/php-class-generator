@@ -12,6 +12,8 @@ $getters = true;
 $getters_type = 'public';
 $add_return_types = true;
 $add_features_for_edit_mode = true;
+$the_table_name = '';
+$the_primary_key = '';
 if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
     $class_name = $_POST['_class_name'];
     $class_properties = $_POST['_properties'];
@@ -22,6 +24,8 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
     $getters_type = isset($_POST['getters_type']) ? $_POST['getters_type'] : 'public';
     $add_return_types = isset($_POST['add_return_types']) && $_POST['add_return_types'] == 1 ? $_POST['add_return_types'] : false;
     $add_features_for_edit_mode = isset($_POST['add_features_for_edit_mode']) && $_POST['add_features_for_edit_mode'] == 1 ? $_POST['add_features_for_edit_mode'] : false;
+    $the_table_name = $_POST['the_table_name'];
+    $the_primary_key = $_POST['the_primary_key'];
 
     $properties = array_map(function ($n) {
         $parts = explode(' ', $n);
@@ -83,16 +87,16 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
         $output[] = "\t".'public function get_data(?array $param = null)';
         $output[] = "\t"."{";
         $output[] = "\t\t".'$sql = "SELECT ';
-        $output[] = "\t\t\t\t".'';
+        $output[] = "\t\t\t\t".'*';
         $output[] = "\t\t\t".'FROM ';
-        $output[] = "\t\t\t\t".'';
+        $output[] = "\t\t\t\t".$the_table_name;
         $output[] = "\t\t\t".'WHERE 1 ';
         $output[] = "\t\t\t".'";';
 
-        $output[] = "\t\t".'$count_sql = "SELECT COUNT() AS TOTAL';
+        $output[] = "\t\t".'$count_sql = "SELECT COUNT('.$the_primary_key.') AS TOTAL';
         $output[] = "\t\t\t\t".'';
         $output[] = "\t\t\t".'FROM ';
-        $output[] = "\t\t\t\t".'';
+        $output[] = "\t\t\t\t".$the_table_name;
         $output[] = "\t\t\t".'WHERE 1 ';
         $output[] = "\t\t\t".'";';
 
@@ -121,11 +125,14 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
         }
         $output[] = "\t\t".'];';
 
-        $output[] = "\t\t".'if($this->get_id()) $db_ret = $devdb->insert_update(\'\', $insert_data, " = \'".$this->get_id()."\'");';
-        $output[] = "\t\t".'else $db_ret = $devdb->insert_update(\'\', $insert_data);';
+        $output[] = "\t\t".'if($this->get_id()) $db_ret = $devdb->insert_update(\''.$the_table_name.'\', $insert_data, " '.$the_primary_key.' = \'".$this->get_id()."\'");';
+        $output[] = "\t\t".'else $db_ret = $devdb->insert_update(\''.$the_table_name.'\', $insert_data);';
 
         $output[] = "\t\t".'if($db_ret[\'error\']) $ret->add_error($db_ret[\'error\']);';
-        $output[] = "\t\t".'else $ret->add_success($db_ret[\'success\']);';
+        $output[] = "\t\t".'else {';
+        $output[] = "\t\t\t".'if(!$this->get_id()) $this->set_id($db_ret[\'success\']);';
+        $output[] = "\t\t\t".'$ret->add_success($db_ret[\'success\']);';
+        $output[] = "\t\t".'}';
 
         $output[] = "\t\t".'return $ret;';
         $output[] = "\t"."}";
@@ -146,11 +153,6 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
         $output[] = '';
         foreach ($properties as $p) {
             $output[] = $p->get_setter_method($setters_type, $add_return_types, $class_name);
-            /*$output[] = "\t".$setters_type . " function ".$p->get_setter_name()."(".($p->get_type() ? $p->get_type().' ' : '')."\$val)".($add_return_types ? ": ".$class_name : "");
-            $output[] = "\t"."{";
-            $output[] = "\t"."\t"."\$this->".$p->get_name()." = \$val;";
-            $output[] = "\t"."\t"."return \$this;";
-            $output[] = "\t"."}";*/
         }
     }
     if ($getters) {
@@ -160,10 +162,6 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
         $output[] = '';
         foreach ($properties as $p) {
             $output[] = $p->get_getter_method($getters_type, $add_return_types);
-            /*$output[] = "\t".$getters_type . " function ".$p->get_getter_name()."()".($add_return_types && $p->get_type()  ? ": ".$p->get_type() : "");
-            $output[] = "\t"."{";
-            $output[] = "\t"."\t"."return \$this->".$p->get_name().";";
-            $output[] = "\t"."}";*/
         }
     }
 
@@ -266,6 +264,14 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
                             <input type="checkbox" class="form-check-input" name="add_features_for_edit_mode" value="1" <?php echo $add_features_for_edit_mode ? 'checked' : ''; ?>>
                             <span class="form-check-label">Features for edit mode?</span>
                         </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Table Name</label>
+                        <input type="text" name="the_table_name" value="<?php echo $the_table_name; ?>" />
+                    </div>
+                    <div class="form-group">
+                        <label>Primary Key</label>
+                        <input type="text" name="the_primary_key" value="<?php echo $the_primary_key; ?>" />
                     </div>
                     <div class="form-group">
                         <button type="submit" name="submit_data" value="submitted" class="btn btn-outline-success">
