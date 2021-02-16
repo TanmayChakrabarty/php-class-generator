@@ -54,7 +54,7 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
         $output[] = "\t"."public function __construct(?int \$id = null)";
         $output[] = "\t"."{";
         $output[] = "\t\t"."if(\$id){";
-        $output[] = "\t\t\t"."\$data = \$this->get_data(['id' => \$id, 'single' => true]);";
+        $output[] = "\t\t\t"."\$data = self::get_data(['id' => \$id, 'single' => true]);";
         $output[] = "\t\t\t"."if(\$data) \$this->fill_with_array(\$data);";
         $output[] = "\t\t\t"."else{";
         $output[] = "\t\t\t\t"."\$this->edit_data_not_found = true;";
@@ -84,7 +84,7 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
         $output[] = "\t\t"."return \$this->edit_data_not_found;";
         $output[] = "\t\t"."}";
 
-        $output[] = "\t".'public function get_data(?array $param = null)';
+        $output[] = "\t".'public static function get_data(?array $param = null)';
         $output[] = "\t"."{";
         $output[] = "\t\t".'$sql = "SELECT ';
         $output[] = "\t\t\t\t".'*';
