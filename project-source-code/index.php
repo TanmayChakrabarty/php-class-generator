@@ -123,6 +123,7 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
                 $output[] = "\t\t\t"."'".$p->get_db_column()."' => \$this->".$p->get_getter_name()."(),";
             }
         }
+
         $output[] = "\t\t".'];';
 
         $output[] = "\t\t".'if($this->get_id()) $db_ret = $devdb->insert_update(\''.$the_table_name.'\', $insert_data, " '.$the_primary_key.' = \'".$this->get_id()."\'");';
