@@ -4,6 +4,7 @@ include_once "each_property.class.php";
 
 $output = '';
 $class_name = '';
+$org_class_properties = '';
 $class_properties = '';
 $class_properties_format = '';
 $setters = true;
@@ -14,10 +15,13 @@ $add_return_types = true;
 $add_features_for_edit_mode = true;
 $the_table_name = '';
 $the_primary_key = '';
+$add_default_create_properties = false;
+$add_default_update_properties = false;
 if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
     $class_name = $_POST['_class_name'];
+    $org_class_properties = $_POST['_properties'];
     $class_properties = $_POST['_properties'];
-    $properties = explode("\n", $_POST['_properties']);
+
     $setters = isset($_POST['create_setters']) && $_POST['create_setters'] == 1 ? true : false;
     $getters = isset($_POST['create_getters']) && $_POST['create_getters'] == 1 ? true : false;
     $setters_type = isset($_POST['setters_type']) ? $_POST['setters_type'] : 'public';
@@ -26,7 +30,24 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
     $add_features_for_edit_mode = isset($_POST['add_features_for_edit_mode']) && $_POST['add_features_for_edit_mode'] == 1 ? $_POST['add_features_for_edit_mode'] : false;
     $the_table_name = $_POST['the_table_name'];
     $the_primary_key = $_POST['the_primary_key'];
+    $add_default_create_properties = isset($_POST['add_default_create_properties']) && $_POST['add_default_create_properties'] == 1 ? $_POST['add_default_create_properties'] : false;
+    $add_default_update_properties = isset($_POST['add_default_update_properties']) && $_POST['add_default_update_properties'] == 1 ? $_POST['add_default_update_properties'] : false;
 
+    if($add_default_create_properties){
+        $class_properties .= "\n"."private ?string create_date null create_date";
+        $class_properties .= "\n"."private ?string create_time null create_time";
+        $class_properties .= "\n"."private ?int create_date_time_int null create_date_time_int";
+        $class_properties .= "\n"."private ?int create_by null create_by";
+    }
+
+    if($add_default_update_properties){
+        $class_properties .= "\n"."private ?string update_date null update_date";
+        $class_properties .= "\n"."private ?string update_time null update_time";
+        $class_properties .= "\n"."private ?int update_date_time_int null update_date_time_int";
+        $class_properties .= "\n"."private ?int update_by null update_by";
+    }
+
+    $properties = explode("\n", $class_properties);
     $properties = array_map(function ($n) {
         $parts = explode(' ', $n);
         $parts = array_map(function ($m) {
@@ -210,7 +231,7 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
                             accessibility type properties_name default_value<br/>
                         </p>
                         <textarea rows="20" class="form-control"
-                                  name="_properties"><?php echo $class_properties; ?></textarea>
+                                  name="_properties"><?php echo $org_class_properties; ?></textarea>
                     </div>
                     <div class="form-group">
                         <label class="form-check">
@@ -273,6 +294,18 @@ if (isset($_POST['submit_data']) && $_POST['submit_data'] == 'submitted') {
                     <div class="form-group">
                         <label>Primary Key</label>
                         <input type="text" name="the_primary_key" value="<?php echo $the_primary_key; ?>" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input" name="add_default_create_properties" value="1" <?php echo $add_default_create_properties ? 'checked' : ''; ?>>
+                            <span class="form-check-label">Add default create fields?</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input" name="add_default_update_properties" value="1" <?php echo $add_default_update_properties ? 'checked' : ''; ?>>
+                            <span class="form-check-label">Add default update fields?</span>
+                        </label>
                     </div>
                     <div class="form-group">
                         <button type="submit" name="submit_data" value="submitted" class="btn btn-outline-success">
